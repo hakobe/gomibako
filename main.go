@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/Songmu/strrand"
 	"github.com/dimfeld/httptreemux"
 	"github.com/urfave/negroni"
 )
@@ -86,6 +87,11 @@ func main() {
 		}
 	})
 	group.POST("/g/-/new", func(w http.ResponseWriter, r *http.Request) {
+		str, err := strrand.RandomString("[a-z0-9]{10}")
+		if err != nil {
+			http.Error(w, "key generation error: "+err.Error(), http.StatusInternalServerError)
+		}
+		http.Redirect(w, r, "/g/"+str+"/inspect", 302)
 	})
 	group.GET("/g/:gomibakokey/inspect", func(w http.ResponseWriter, r *http.Request) {
 		params := httptreemux.ContextParams(r.Context())
