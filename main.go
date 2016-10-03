@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/list"
 	"errors"
 	"html/template"
 	"io"
@@ -44,7 +45,7 @@ type GomibakoRequest struct {
 
 type Gomibako struct {
 	key      GomibakoKey
-	requests []*GomibakoRequest
+	requests *list.List
 }
 
 type GomibakoRepository struct {
@@ -72,7 +73,7 @@ func (gr *GomibakoRepository) AddGomibako() (*Gomibako, error) {
 
 	gr.gomibakos[newKey] = &Gomibako{
 		key:      newKey,
-		requests: make([]*GomibakoRequest, 0),
+		requests: list.New(),
 	}
 
 	return gr.gomibakos[newKey], nil
@@ -86,7 +87,10 @@ func (gr *GomibakoRepository) AddRequest(key GomibakoKey, greq *GomibakoRequest)
 	if !ok {
 		return errors.New("no gomibako found")
 	}
-	g.requests = append(g.requests, greq)
+	g.requests.PushBack(greq)
+	if g.requests.Len() > 10 {
+		g.requests.Remove(g.requests.Front())
+	}
 	return nil
 }
 
@@ -176,10 +180,9 @@ func main() {
 			http.Error(w, "no gomibako found", http.StatusNotFound)
 			return
 		}
-
-		requests := make([]*ViewableGomibakoRequest, len(g.requests))
-		for i, r := range g.requests {
-			requests[(len(g.requests)-1)-i] = NewViewableGomibakoRequest(r)
+		var requests []*ViewableGomibakoRequest
+		for r := g.requests.Back(); r != nil; r = r.Prev() {
+			requests = append(requests, NewViewableGomibakoRequest(r.Value.(*GomibakoRequest)))
 		}
 
 		type Inventry struct {
