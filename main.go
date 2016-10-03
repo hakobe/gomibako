@@ -31,9 +31,9 @@ func _templates() map[string]*template.Template {
 	return templates
 }
 
-type gomibakoKey string
+type GomibakoKey string
 
-type gomibakoRequest struct {
+type GomibakoRequest struct {
 	timestamp     time.Time
 	method        string
 	url           *url.URL
@@ -42,25 +42,25 @@ type gomibakoRequest struct {
 	contentLength int64
 }
 
-type gomibako struct {
-	key      gomibakoKey
-	requests []*gomibakoRequest
+type Gomibako struct {
+	key      GomibakoKey
+	requests []*GomibakoRequest
 }
 
-type gomibakoRepository struct {
-	gomibakos map[gomibakoKey]*gomibako
+type GomibakoRepository struct {
+	gomibakos map[GomibakoKey]*Gomibako
 	mutex     sync.RWMutex
 }
 
-func newGomibakoRepository() *gomibakoRepository {
-	gr := gomibakoRepository{
-		gomibakos: make(map[gomibakoKey]*gomibako),
+func NewGomibakoRepository() *GomibakoRepository {
+	gr := GomibakoRepository{
+		gomibakos: make(map[GomibakoKey]*Gomibako),
 		mutex:     sync.RWMutex{},
 	}
 	return &gr
 }
 
-func (gr *gomibakoRepository) AddGomibako() (*gomibako, error) {
+func (gr *GomibakoRepository) AddGomibako() (*Gomibako, error) {
 	gr.mutex.Lock()
 	defer gr.mutex.Unlock()
 
@@ -68,17 +68,17 @@ func (gr *gomibakoRepository) AddGomibako() (*gomibako, error) {
 	if err != nil {
 		return nil, err
 	}
-	newKey := gomibakoKey(str)
+	newKey := GomibakoKey(str)
 
-	gr.gomibakos[newKey] = &gomibako{
+	gr.gomibakos[newKey] = &Gomibako{
 		key:      newKey,
-		requests: make([]*gomibakoRequest, 0),
+		requests: make([]*GomibakoRequest, 0),
 	}
 
 	return gr.gomibakos[newKey], nil
 }
 
-func (gr *gomibakoRepository) AddRequest(key gomibakoKey, greq *gomibakoRequest) error {
+func (gr *GomibakoRepository) AddRequest(key GomibakoKey, greq *GomibakoRequest) error {
 	gr.mutex.Lock()
 	defer gr.mutex.Unlock()
 
@@ -90,7 +90,7 @@ func (gr *gomibakoRepository) AddRequest(key gomibakoKey, greq *gomibakoRequest)
 	return nil
 }
 
-func (gr *gomibakoRepository) Get(key gomibakoKey) (*gomibako, error) {
+func (gr *GomibakoRepository) Get(key GomibakoKey) (*Gomibako, error) {
 	gr.mutex.RLock()
 	defer gr.mutex.RUnlock()
 
@@ -127,7 +127,7 @@ type ViewableGomibakoRequest struct {
 	ContentLength string
 }
 
-func newViewableGomibakoRequest(greq *gomibakoRequest) *ViewableGomibakoRequest {
+func NewViewableGomibakoRequest(greq *GomibakoRequest) *ViewableGomibakoRequest {
 	var viewableHeaders ViewableHeaders
 	for k, vs := range greq.headers {
 		for _, v := range vs {
@@ -147,7 +147,7 @@ func newViewableGomibakoRequest(greq *gomibakoRequest) *ViewableGomibakoRequest 
 
 func main() {
 
-	gr := newGomibakoRepository()
+	gr := NewGomibakoRepository()
 	router := httptreemux.New()
 	templates := _templates()
 
@@ -170,7 +170,7 @@ func main() {
 	})
 	group.GET("/g/:gomibakokey/inspect", func(w http.ResponseWriter, r *http.Request) {
 		params := httptreemux.ContextParams(r.Context())
-		gomibakoKey := gomibakoKey(params["gomibakokey"])
+		gomibakoKey := GomibakoKey(params["gomibakokey"])
 		g, err := gr.Get(gomibakoKey)
 		if err != nil {
 			http.Error(w, "no gomibako found", http.StatusNotFound)
@@ -179,7 +179,7 @@ func main() {
 
 		requests := make([]*ViewableGomibakoRequest, len(g.requests))
 		for i, r := range g.requests {
-			requests[(len(g.requests)-1)-i] = newViewableGomibakoRequest(r)
+			requests[(len(g.requests)-1)-i] = NewViewableGomibakoRequest(r)
 		}
 
 		type Inventry struct {
@@ -196,7 +196,7 @@ func main() {
 	})
 	recordReq := func(w http.ResponseWriter, r *http.Request) {
 		params := httptreemux.ContextParams(r.Context())
-		gomibakoKey := gomibakoKey(params["gomibakokey"])
+		gomibakoKey := GomibakoKey(params["gomibakokey"])
 
 		reader := http.MaxBytesReader(w, r.Body, 3*1000*1000)
 		defer reader.Close()
@@ -206,7 +206,7 @@ func main() {
 			return
 		}
 
-		greq := &gomibakoRequest{
+		greq := &GomibakoRequest{
 			timestamp: time.Now(),
 			method:    r.Method,
 			url:       r.URL,
