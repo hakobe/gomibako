@@ -1,9 +1,19 @@
 {{ define "content" }}
 {{ range .Requests }}
+<h2>{{ .Method }} {{ .URL }}</h2>
 <section>
-  <pre>
-  {{ . }}
-  </pre>
+  <div>{{ .Timestamp }}</div>
+  <h3>Headers</h3>
+  <table>
+    {{ range .Headers }}
+    <tr><th>{{ .Key }}</th><td>{{ .Value }}</td></tr>
+    {{ end }}
+  </table>
+  <h3>Body</h3>
+  <div>
+    <pre>{{ .Body }}</pre>
+    <div> {{ .ContentLength }} bytes</div>
+  </div>
 </section>
 {{ end }}
 {{ end }}
