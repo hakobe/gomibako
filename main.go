@@ -200,6 +200,11 @@ func main() {
 	recordReq := func(w http.ResponseWriter, r *http.Request) {
 		params := httptreemux.ContextParams(r.Context())
 		gomibakoKey := GomibakoKey(params["gomibakokey"])
+		_, err := gr.Get(gomibakoKey)
+		if err != nil {
+			http.Error(w, "no gomibako found", http.StatusNotFound)
+			return
+		}
 
 		reader := http.MaxBytesReader(w, r.Body, 3*1000*1000)
 		defer reader.Close()
