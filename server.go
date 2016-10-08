@@ -1,6 +1,8 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"html/template"
 	"io"
 	"io/ioutil"
@@ -27,8 +29,8 @@ func _templates() map[string]*template.Template {
 }
 
 type ViewableHeaderPair struct {
-	Key   string
-	Value string
+	Key   string `json:"key"`
+	Value string `json:"value"`
 }
 
 type ViewableHeaders []*ViewableHeaderPair
@@ -44,29 +46,29 @@ func (hs ViewableHeaders) Less(i, j int) bool {
 }
 
 type ViewableGomibakoRequest struct {
-	Timestamp     string
-	Method        string
-	URL           string
-	Headers       ViewableHeaders
-	Body          string
-	ContentLength string
+	Timestamp     string          `json:"timestamp"`
+	Method        string          `json:"method"`
+	URL           string          `json:"url"`
+	Headers       ViewableHeaders `json:"headers"`
+	Body          string          `json:"body"`
+	ContentLength string          `json:"contentLength"`
 }
 
 func NewViewableGomibakoRequest(greq *GomibakoRequest) *ViewableGomibakoRequest {
 	var viewableHeaders ViewableHeaders
-	for k, vs := range greq.headers {
+	for k, vs := range greq.Headers {
 		for _, v := range vs {
 			viewableHeaders = append(viewableHeaders, &ViewableHeaderPair{k, v})
 		}
 	}
 	sort.Sort(viewableHeaders)
 	return &ViewableGomibakoRequest{
-		Timestamp:     greq.timestamp.String(),
-		Method:        greq.method,
-		URL:           greq.url.String(),
+		Timestamp:     greq.Timestamp.String(),
+		Method:        greq.Method,
+		URL:           greq.URL.String(),
 		Headers:       viewableHeaders,
-		Body:          string(greq.body),
-		ContentLength: strconv.FormatInt(greq.contentLength, 10),
+		Body:          string(greq.Body),
+		ContentLength: strconv.Itoa(greq.ContentLength),
 	}
 }
 
@@ -92,28 +94,61 @@ func NewServerHandler(gr *GomibakoRepository) http.Handler {
 		http.Redirect(w, r, "/g/"+string(g.key)+"/inspect", 302)
 	})
 	group.GET("/g/:gomibakokey/inspect", func(w http.ResponseWriter, r *http.Request) {
+	})
+	group.GET("/g/:gomibakokey/events", func(w http.ResponseWriter, r *http.Request) {
 		params := httptreemux.ContextParams(r.Context())
 		gomibakoKey := GomibakoKey(params["gomibakokey"])
-		g, err := gr.Get(gomibakoKey)
+		g, ch, err := gr.GetWithCh(gomibakoKey)
+		defer gr.Release(g.key, ch)
+
 		if err != nil {
 			http.Error(w, "no gomibako found", http.StatusNotFound)
 			return
 		}
-		var requests []*ViewableGomibakoRequest
-		for r := g.requests.Back(); r != nil; r = r.Prev() {
-			requests = append(requests, NewViewableGomibakoRequest(r.Value.(*GomibakoRequest)))
-		}
 
-		type Inventry struct {
-			Title    string
-			Requests []*ViewableGomibakoRequest
-		}
-
-		inv := Inventry{Title: "gomibako: " + string(gomibakoKey), Requests: requests}
-		err = templates["inspect"].Execute(w, inv)
-		if err != nil {
-			http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
+		fw, ok := w.(http.Flusher)
+		if !ok {
+			http.Error(w, "Streaming unsupported!", http.StatusInternalServerError)
 			return
+		}
+
+		cw, ok := w.(http.CloseNotifier)
+		if !ok {
+			http.Error(w, "Close notifying unsupported!", http.StatusInternalServerError)
+			return
+		}
+
+		cn := cw.CloseNotify()
+
+		w.Header().Set("Content-Type", "text/event-stream")
+		w.Header().Set("Cache-Control", "no-cache")
+		w.Header().Set("Connection", "keep-alive")
+		w.Header().Set("Access-Control-Allow-Origin", "*")
+
+		greqs := g.Requests()
+		for _, greq := range greqs {
+			j, err := json.Marshal(NewViewableGomibakoRequest(greq))
+			if err != nil {
+				http.Error(w, "Failed to create json", http.StatusInternalServerError)
+				return
+			}
+			fmt.Fprintf(w, "data: %s\n\n", j)
+		}
+		fw.Flush()
+
+		for {
+			select {
+			case gomibakoReq := <-ch:
+				j, err := json.Marshal(NewViewableGomibakoRequest(gomibakoReq))
+				if err != nil {
+					http.Error(w, "Failed to create json", http.StatusInternalServerError)
+					return
+				}
+				fmt.Fprintf(w, "data: %s\n\n", j)
+				fw.Flush()
+			case _ = <-cn:
+				return
+			}
 		}
 	})
 	recordReq := func(w http.ResponseWriter, r *http.Request) {
@@ -134,13 +169,15 @@ func NewServerHandler(gr *GomibakoRepository) http.Handler {
 		}
 
 		greq := &GomibakoRequest{
-			timestamp: time.Now(),
-			method:    r.Method,
-			url:       r.URL,
-			headers:   r.Header,
-			body:      bodyBytes,
+			Key:           gomibakoKey,
+			Timestamp:     time.Now(),
+			Method:        r.Method,
+			URL:           r.URL,
+			Headers:       r.Header,
+			Body:          bodyBytes,
+			ContentLength: len(bodyBytes),
 		}
-		gr.AddRequest(gomibakoKey, greq)
+		gr.AddRequest(greq)
 
 		w.Header().Set("Content-Type", "text/plain")
 		w.WriteHeader(http.StatusOK)

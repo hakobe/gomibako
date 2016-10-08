@@ -7,6 +7,8 @@ import (
 
 func main() {
 	gr := NewGomibakoRepository()
+	go gr.RunBroker()
+
 	handler := NewServerHandler(gr)
 	log.Fatal(http.ListenAndServe(":8000", handler))
 }
