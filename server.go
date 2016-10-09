@@ -99,12 +99,11 @@ func NewServerHandler(gr *GomibakoRepository) http.Handler {
 		params := httptreemux.ContextParams(r.Context())
 		gomibakoKey := GomibakoKey(params["gomibakokey"])
 		g, ch, err := gr.GetWithCh(gomibakoKey)
-		defer gr.Release(g.key, ch)
-
 		if err != nil {
 			http.Error(w, "no gomibako found", http.StatusNotFound)
 			return
 		}
+		defer gr.Release(g.key, ch)
 
 		fw, ok := w.(http.Flusher)
 		if !ok {
@@ -123,7 +122,7 @@ func NewServerHandler(gr *GomibakoRepository) http.Handler {
 		w.Header().Set("Content-Type", "text/event-stream")
 		w.Header().Set("Cache-Control", "no-cache")
 		w.Header().Set("Connection", "keep-alive")
-		w.Header().Set("Access-Control-Allow-Origin", "*")
+		w.WriteHeader(http.StatusOK)
 
 		greqs := g.Requests()
 		for _, greq := range greqs {
