@@ -1,4 +1,4 @@
-package main
+package gomibako
 
 import (
 	"container/list"
@@ -24,7 +24,7 @@ type GomibakoRequest struct {
 }
 
 type Gomibako struct {
-	key   GomibakoKey
+	Key   GomibakoKey
 	reqs  *list.List
 	chs   map[chan *GomibakoRequest]bool
 	mutex sync.RWMutex
@@ -102,7 +102,7 @@ func (gr *GomibakoRepository) AddGomibako() (*Gomibako, error) {
 	newKey := GomibakoKey(str)
 
 	gr.gomibakos[newKey] = &Gomibako{
-		key:  newKey,
+		Key:  newKey,
 		reqs: list.New(),
 		chs:  make(map[chan *GomibakoRequest]bool),
 	}
