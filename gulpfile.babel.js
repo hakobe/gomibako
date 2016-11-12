@@ -7,17 +7,17 @@ import webpack from 'webpack-stream';
 import webpackConfig from './webpack.config.babel';
 
 const paths = {
-  allSrcJs: 'js/src/**/*.js',
+  allSrcJs: 'js/src/**/*.js?(x)',
   gulpFile: 'gulpfile.babel.js',
   webpackFile: 'webpack.config.babel.js',
-  entryPoint: 'js/src/app.js',
+  entryPoint: 'js/src/reqevents.jsx',
   distDir: 'static/script',
 };
 
 gulp.task('clean', () => del(paths.libDir));
 
 gulp.task('build', ['lint', 'clean'], () =>
-  gulp.src(paths.allSrcJs)
+  gulp.src(paths.entryPoint)
     .pipe(webpack(webpackConfig))
     .pipe(gulp.dest(paths.distDir))
 );
@@ -33,3 +33,7 @@ gulp.task('lint', () =>
     .pipe(eslint.format())
     .pipe(eslint.failAfterError())
 );
+
+gulp.task('watch', () => {
+  gulp.watch(paths.allSrcJs, ['default']);
+});

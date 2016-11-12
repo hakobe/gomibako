@@ -45,7 +45,7 @@ func (hs ViewableHeaders) Less(i, j int) bool {
 }
 
 type ViewableGomibakoRequest struct {
-	Timestamp     string          `json:"timestamp"`
+	Timestamp     int64           `json:"timestamp"`
 	Method        string          `json:"method"`
 	URL           string          `json:"url"`
 	Headers       ViewableHeaders `json:"headers"`
@@ -62,7 +62,7 @@ func NewViewableGomibakoRequest(greq *gomibako.GomibakoRequest) *ViewableGomibak
 	}
 	sort.Sort(viewableHeaders)
 	return &ViewableGomibakoRequest{
-		Timestamp:     greq.Timestamp.String(),
+		Timestamp:     greq.Timestamp.Unix(),
 		Method:        greq.Method,
 		URL:           greq.URL.String(),
 		Headers:       viewableHeaders,
@@ -93,7 +93,7 @@ func NewServerHandler(gr *gomibako.GomibakoRepository) http.Handler {
 		type Inventry struct {
 			Title string
 		}
-		err := templates["index"].Execute(w, Inventry{Title: "My index page"})
+		err := templates["index"].Execute(w, Inventry{Title: ""})
 		if err != nil {
 			http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
 		}
@@ -106,8 +106,19 @@ func NewServerHandler(gr *gomibako.GomibakoRepository) http.Handler {
 		http.Redirect(w, r, "/g/"+string(g.Key)+"/inspect", 302)
 	})
 	group.GET("/g/:gomibakokey/inspect", func(w http.ResponseWriter, r *http.Request) {
+		params := httptreemux.ContextParams(r.Context())
+		gomibakoKey := gomibako.GomibakoKey(params["gomibakokey"])
+
+		type Inventry struct {
+			Title string
+		}
+
+		err := templates["inspect"].Execute(w, Inventry{Title: string(gomibakoKey)})
+		if err != nil {
+			http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
+		}
 	})
-	group.GET("/g/:gomibakokey/events", func(w http.ResponseWriter, r *http.Request) {
+	group.GET("/g/:gomibakokey/reqevents", func(w http.ResponseWriter, r *http.Request) {
 		params := httptreemux.ContextParams(r.Context())
 		gomibakoKey := gomibako.GomibakoKey(params["gomibakokey"])
 		g, ch, err := gr.GetWithCh(gomibakoKey)
@@ -198,6 +209,7 @@ func NewServerHandler(gr *gomibako.GomibakoRepository) http.Handler {
 	group.POST("/g/:gomibakokey", recordReq)
 
 	n := negroni.Classic()
+	n.Use(negroni.NewStatic(http.Dir("static")))
 	n.UseHandler(router)
 
 	return n
