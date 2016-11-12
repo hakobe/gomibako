@@ -3,6 +3,29 @@ body {
     padding: 0;
 }
 
+form {
+    margin: 1rem;
+}
+
+form input[type="submit"] {
+    border:solid 1px #ccc;
+    padding:15px 30px;
+    margin:0 0 15px;
+    font-size:1.2em;
+    font-weight:bold;
+    color:#333;
+    background-color: #eee;
+    cursor:pointer;
+}
+
+.message {
+    margin: 1rem;
+}
+
+.no-requests .message {
+    display: none;
+}
+
 ul.requests {
     margin: 0;
     padding: 0;

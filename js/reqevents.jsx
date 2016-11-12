@@ -3,15 +3,11 @@ import 'babel-polyfill';
 import React from 'react';
 import ReactDOM from 'react-dom';
 
+const locationURL = new URL(window.location);
+const gomibakoKey = locationURL.pathname.match(/^\/g\/([^/]+)\/inspect/)[1];
 
-function createReqEventsURL() {
-  const path = new URL(window.location).pathname;
-
-  const m = path.match(/^\/g\/([^/]+)\/inspect/);
-  const gomibakoKey = m[1];
-  return `/g/${gomibakoKey}/reqevents`;
-}
-const reqEventsURL = createReqEventsURL();
+const reqEventsPath = `/g/${gomibakoKey}/reqevents`;
+const accessURL = `${new URL(window.location).origin}/g/${gomibakoKey}`;
 
 function formatTimestamp(t) {
   return `${t.getFullYear()}-${t.getMonth() + 1}-${t.getDate()} ${t.getHours()}:${t.getMinutes()}`;
@@ -50,7 +46,7 @@ class Requests extends React.Component {
     };
   }
   componentDidMount() {
-    const reqevents = new EventSource(reqEventsURL);
+    const reqevents = new EventSource(reqEventsPath);
     reqevents.onmessage = (e) => {
       const r = JSON.parse(e.data);
       r.timestamp = new Date(r.timestamp * 1000);
@@ -64,10 +60,21 @@ class Requests extends React.Component {
     const requests = this.state.requests.map(r => (
       <li key={r.timestamp}><Request request={r} /></li>
     ));
+    const showMsg = this.state.requests.length === 0;
+    const message = showMsg ? (
+      <div className="message">
+        Access to {accessURL}
+      </div>
+    ) : (
+      ''
+    );
     return (
-      <ul className="requests">
-        {requests}
-      </ul>
+      <div>
+        {message}
+        <ul className="requests">
+          {requests}
+        </ul>
+      </div>
     );
   }
 }

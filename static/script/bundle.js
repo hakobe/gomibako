@@ -67,14 +67,11 @@
 	function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; } /* eslint-disable react/forbid-prop-types, no-console */
 	
 	
-	function createReqEventsURL() {
-	  var path = new URL(window.location).pathname;
+	var locationURL = new URL(window.location);
+	var gomibakoKey = locationURL.pathname.match(/^\/g\/([^/]+)\/inspect/)[1];
 	
-	  var m = path.match(/^\/g\/([^/]+)\/inspect/);
-	  var gomibakoKey = m[1];
-	  return '/g/' + gomibakoKey + '/reqevents';
-	}
-	var reqEventsURL = createReqEventsURL();
+	var reqEventsPath = '/g/' + gomibakoKey + '/reqevents';
+	var accessURL = new URL(window.location).origin + '/g/' + gomibakoKey;
 	
 	function formatTimestamp(t) {
 	  return t.getFullYear() + '-' + (t.getMonth() + 1) + '-' + t.getDate() + ' ' + t.getHours() + ':' + t.getMinutes();
@@ -164,7 +161,7 @@
 	    value: function componentDidMount() {
 	      var _this2 = this;
 	
-	      var reqevents = new EventSource(reqEventsURL);
+	      var reqevents = new EventSource(reqEventsPath);
 	      reqevents.onmessage = function (e) {
 	        var r = JSON.parse(e.data);
 	        r.timestamp = new Date(r.timestamp * 1000);
@@ -184,10 +181,22 @@
 	          _react2.default.createElement(Request, { request: r })
 	        );
 	      });
+	      var showMsg = this.state.requests.length === 0;
+	      var message = showMsg ? _react2.default.createElement(
+	        'div',
+	        { className: 'message' },
+	        'Access to ',
+	        accessURL
+	      ) : '';
 	      return _react2.default.createElement(
-	        'ul',
-	        { className: 'requests' },
-	        requests
+	        'div',
+	        null,
+	        message,
+	        _react2.default.createElement(
+	          'ul',
+	          { className: 'requests' },
+	          requests
+	        )
 	      );
 	    }
 	  }]);
