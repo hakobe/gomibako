@@ -74,7 +74,7 @@
 	var accessURL = new URL(window.location).origin + '/g/' + gomibakoKey;
 	
 	function formatTimestamp(t) {
-	  return t.getFullYear() + '-' + (t.getMonth() + 1) + '-' + t.getDate() + ' ' + t.getHours() + ':' + t.getMinutes();
+	  return t.getFullYear() + '-' + (t.getMonth() + 1) + '-' + t.getDate() + ' ' + t.getHours() + ':' + t.getMinutes() + ':' + t.getSeconds();
 	}
 	
 	var Request = function Request(props) {
@@ -164,7 +164,8 @@
 	      var reqevents = new EventSource(reqEventsPath);
 	      reqevents.onmessage = function (e) {
 	        var r = JSON.parse(e.data);
-	        r.timestamp = new Date(r.timestamp * 1000);
+	        r.key = r.timestamp;
+	        r.timestamp = new Date(r.key / (1000 * 1000));
 	        _this2.state.requests.unshift(r);
 	        _this2.setState({
 	          requests: _this2.state.requests
@@ -177,7 +178,7 @@
 	      var requests = this.state.requests.map(function (r) {
 	        return _react2.default.createElement(
 	          'li',
-	          { key: r.timestamp },
+	          { key: r.key },
 	          _react2.default.createElement(Request, { request: r })
 	        );
 	      });

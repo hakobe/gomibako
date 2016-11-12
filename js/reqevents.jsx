@@ -10,7 +10,7 @@ const reqEventsPath = `/g/${gomibakoKey}/reqevents`;
 const accessURL = `${new URL(window.location).origin}/g/${gomibakoKey}`;
 
 function formatTimestamp(t) {
-  return `${t.getFullYear()}-${t.getMonth() + 1}-${t.getDate()} ${t.getHours()}:${t.getMinutes()}`;
+  return `${t.getFullYear()}-${t.getMonth() + 1}-${t.getDate()} ${t.getHours()}:${t.getMinutes()}:${t.getSeconds()}`;
 }
 
 const Request = (props) => {
@@ -49,7 +49,8 @@ class Requests extends React.Component {
     const reqevents = new EventSource(reqEventsPath);
     reqevents.onmessage = (e) => {
       const r = JSON.parse(e.data);
-      r.timestamp = new Date(r.timestamp * 1000);
+      r.key = r.timestamp;
+      r.timestamp = new Date(r.key / (1000 * 1000));
       this.state.requests.unshift(r);
       this.setState({
         requests: this.state.requests,
@@ -58,7 +59,7 @@ class Requests extends React.Component {
   }
   render() {
     const requests = this.state.requests.map(r => (
-      <li key={r.timestamp}><Request request={r} /></li>
+      <li key={r.key}><Request request={r} /></li>
     ));
     const showMsg = this.state.requests.length === 0;
     const message = showMsg ? (

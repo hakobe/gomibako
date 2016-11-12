@@ -62,7 +62,7 @@ func NewViewableGomibakoRequest(greq *gomibako.GomibakoRequest) *ViewableGomibak
 	}
 	sort.Sort(viewableHeaders)
 	return &ViewableGomibakoRequest{
-		Timestamp:     greq.Timestamp.Unix(),
+		Timestamp:     greq.Timestamp.UnixNano(),
 		Method:        greq.Method,
 		URL:           greq.URL.String(),
 		Headers:       viewableHeaders,
