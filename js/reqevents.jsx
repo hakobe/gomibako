@@ -23,14 +23,18 @@ const Request = (props) => {
     <tr key={h.key}><th>{h.key}</th><td>{h.value}</td></tr>
   ));
 
+  const body = request.body ?
+    (<pre>{request.body}</pre>) : (<pre className="no-body">No body</pre>);
+
   return (
-    <div>
-      <div>{formatTimestamp(request.timestamp)}</div>
-      <div>{request.method} {request.url}</div>
+    <div className="request">
+      <div className="timestamp">{formatTimestamp(request.timestamp)}</div>
+      <div className="method-url">{request.method} {request.url}</div>
       <table>
         <tbody>{headers}</tbody>
       </table>
-      <pre>{request.body}</pre>
+      <div className="body-title">Body</div>
+      {body}
     </div>
   );
 };
@@ -61,7 +65,7 @@ class Requests extends React.Component {
       <li key={r.timestamp}><Request request={r} /></li>
     ));
     return (
-      <ul>
+      <ul className="requests">
         {requests}
       </ul>
     );

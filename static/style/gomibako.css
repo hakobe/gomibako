@@ -1,0 +1,50 @@
+body {
+    margin: 0;
+    padding: 0;
+}
+
+ul.requests {
+    margin: 0;
+    padding: 0;
+}
+
+ul.requests li {
+    margin: 10px;
+    padding: 10px;
+    list-style: none;
+    border-bottom: solid 1px #eee;
+}
+
+.request {
+    font-family: monospace;
+}
+
+.request table {
+    width: 100%;
+    font-size: 0.9rem;
+    table-layout: fixed;
+}
+
+.request th {
+    width: 10rem !important;
+}
+
+.request div.method-url {
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.request div.body-title {
+    margin: 0.5rem 0 0.2rem 0.3rem ;
+    font-size: 0.9rem;
+}
+
+.request pre {
+    margin: 0;
+    padding: 0.5rem;
+    background-color: #eee;
+}
+
+.request pre.no-body {
+    color: #aaa;
+}
