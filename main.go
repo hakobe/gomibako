@@ -27,6 +27,7 @@ func main() {
 	flag.Parse()
 
 	gr := gomibako.NewGomibakoRepository()
+	go gr.RunTruncater()
 	go gr.RunBroker()
 
 	handler := NewServerHandler(gr)
@@ -119,11 +120,17 @@ func NewServerHandler(gr *gomibako.GomibakoRepository) http.Handler {
 		params := httptreemux.ContextParams(r.Context())
 		gomibakoKey := gomibako.GomibakoKey(params["gomibakokey"])
 
+		_, err := gr.Get(gomibakoKey)
+		if err != nil {
+			http.Error(w, "no gomibako found", http.StatusNotFound)
+			return
+		}
+
 		type Inventry struct {
 			Title string
 		}
 
-		err := templates["inspect"].Execute(w, Inventry{Title: string(gomibakoKey)})
+		err = templates["inspect"].Execute(w, Inventry{Title: string(gomibakoKey)})
 		if err != nil {
 			http.Error(w, "template error: "+err.Error(), http.StatusInternalServerError)
 		}
@@ -170,7 +177,10 @@ func NewServerHandler(gr *gomibako.GomibakoRepository) http.Handler {
 
 		for {
 			select {
-			case gomibakoReq := <-ch:
+			case gomibakoReq, ok := <-ch:
+				if !ok {
+					return
+				}
 				j, err := json.Marshal(NewViewableGomibakoRequest(gomibakoReq))
 				if err != nil {
 					http.Error(w, "Failed to create json", http.StatusInternalServerError)

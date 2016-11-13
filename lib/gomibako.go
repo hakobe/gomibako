@@ -3,6 +3,7 @@ package gomibako
 import (
 	"container/list"
 	"errors"
+	"log"
 	"net/http"
 	"net/url"
 	"sync"
@@ -24,10 +25,11 @@ type GomibakoRequest struct {
 }
 
 type Gomibako struct {
-	Key   GomibakoKey
-	reqs  *list.List
-	chs   map[chan *GomibakoRequest]bool
-	mutex sync.RWMutex
+	Key       GomibakoKey
+	timestamp time.Time
+	reqs      *list.List
+	chs       map[chan *GomibakoRequest]bool
+	mutex     sync.RWMutex
 }
 
 func (g *Gomibako) addCh(ch chan *GomibakoRequest) {
@@ -42,6 +44,16 @@ func (g *Gomibako) releaseCh(ch chan *GomibakoRequest) {
 	defer g.mutex.Unlock()
 
 	delete(g.chs, ch)
+}
+
+func (g *Gomibako) releaseChAll() {
+	g.mutex.Lock()
+	defer g.mutex.Unlock()
+
+	for ch := range g.chs {
+		close(ch)
+	}
+	g.chs = make(map[chan *GomibakoRequest]bool)
 }
 
 func (g *Gomibako) addRequest(greq *GomibakoRequest) {
@@ -102,9 +114,10 @@ func (gr *GomibakoRepository) AddGomibako() (*Gomibako, error) {
 	newKey := GomibakoKey(str)
 
 	gr.gomibakos[newKey] = &Gomibako{
-		Key:  newKey,
-		reqs: list.New(),
-		chs:  make(map[chan *GomibakoRequest]bool),
+		Key:       newKey,
+		timestamp: time.Now(),
+		reqs:      list.New(),
+		chs:       make(map[chan *GomibakoRequest]bool),
 	}
 
 	return gr.gomibakos[newKey], nil
@@ -159,8 +172,26 @@ func (gr *GomibakoRepository) Release(key GomibakoKey, ch chan *GomibakoRequest)
 	}
 
 	g.releaseCh(ch)
+	close(ch)
 
 	return nil
+}
+
+func (gr *GomibakoRepository) Truncate() {
+	gr.mutex.Lock()
+	defer gr.mutex.Unlock()
+
+	log.Println("Start truncating")
+	for gk, g := range gr.gomibakos {
+		d := time.Since(g.timestamp)
+
+		if d.Hours() > 1 {
+			log.Println("Deleting " + string(gk))
+			g.releaseChAll()
+			delete(gr.gomibakos, gk)
+		}
+	}
+	log.Println("Current gomibakos: %d", len(gr.gomibakos))
 }
 
 func (gr *GomibakoRepository) RunBroker() {
@@ -174,5 +205,13 @@ func (gr *GomibakoRepository) RunBroker() {
 			ch <- newGreq
 		}
 		gr.mutex.RUnlock()
+	}
+}
+
+func (gr *GomibakoRepository) RunTruncater() {
+	t := time.Tick(5 * time.Minute)
+
+	for _ = range t {
+		gr.Truncate()
 	}
 }
