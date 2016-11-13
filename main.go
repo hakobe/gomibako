@@ -17,6 +17,7 @@ import (
 	gomibako "github.com/hakobe/gomibako/lib"
 
 	"github.com/dimfeld/httptreemux"
+	"github.com/unrolled/secure"
 	"github.com/urfave/negroni"
 )
 
@@ -214,6 +215,13 @@ func NewServerHandler(gr *gomibako.GomibakoRepository) http.Handler {
 	group.POST("/g/:gomibakokey", recordReq)
 
 	n := negroni.Classic()
+	secureMiddleware := secure.New(secure.Options{
+		FrameDeny:             true,
+		ContentTypeNosniff:    true,
+		BrowserXssFilter:      true,
+		ContentSecurityPolicy: "default-src 'self'",
+	})
+	n.Use(negroni.HandlerFunc(secureMiddleware.HandlerFuncWithNext))
 	n.Use(negroni.NewStatic(http.Dir("static")))
 	n.UseHandler(router)
 
