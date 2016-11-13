@@ -2,7 +2,7 @@
 
 A requestb.in clone writtern in Go. (hobby product)
 
-## Uage
+## Usage
 
 `go run main.go` and access to http://localhost:8000
 
