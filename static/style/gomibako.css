@@ -66,8 +66,16 @@ ul.requests li {
     margin: 0;
     padding: 0.5rem;
     background-color: #eee;
+    white-space: pre-wrap;
+    max-height: 15rem;
+    overflow: hidden;
 }
 
 .request pre.no-body {
     color: #aaa;
+}
+
+.request pre:hover {
+    border: solid 2px #ccc;
+    max-height: none;
 }
