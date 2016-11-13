@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"log"
 	"net/http"
 
@@ -61,12 +62,16 @@ func NewViewableGomibakoRequest(greq *gomibako.GomibakoRequest) *ViewableGomibak
 		}
 	}
 	sort.Sort(viewableHeaders)
+	bodyRunes := bytes.Runes(greq.Body)
+	if len(bodyRunes) > 1000*1000 {
+		bodyRunes = bodyRunes[0:(1000 * 1000)]
+	}
 	return &ViewableGomibakoRequest{
 		Timestamp:     greq.Timestamp.UnixNano(),
 		Method:        greq.Method,
 		URL:           greq.URL.String(),
 		Headers:       viewableHeaders,
-		Body:          string(greq.Body),
+		Body:          string(bodyRunes),
 		ContentLength: strconv.Itoa(greq.ContentLength),
 	}
 }
