@@ -6,6 +6,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -182,6 +183,7 @@ func (gr *GomibakoRepository) Truncate() {
 	defer gr.mutex.Unlock()
 
 	log.Println("Start truncating")
+	var ids []string
 	for gk, g := range gr.gomibakos {
 		d := time.Since(g.timestamp)
 
@@ -189,9 +191,11 @@ func (gr *GomibakoRepository) Truncate() {
 			log.Println("Deleting " + string(gk))
 			g.releaseChAll()
 			delete(gr.gomibakos, gk)
+		} else {
+			ids = append(ids, string(gk))
 		}
 	}
-	log.Println("Current gomibakos: %d", len(gr.gomibakos))
+	log.Println("Current gomibakos:", strings.Join(ids, ", "))
 }
 
 func (gr *GomibakoRepository) RunBroker() {
