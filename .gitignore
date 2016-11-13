@@ -1,3 +1,4 @@
 /gomibako
 /node_modules/
 /static/
+/bindata.go

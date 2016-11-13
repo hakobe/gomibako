@@ -6,7 +6,9 @@ A requestb.in clone writtern in Go. (hobby product)
 
 ```sh
 $ npm install -g yarn # If you have not installed yarn
+$ go get -u github.com/jteeuwen/go-bindata/... # If you have not installed go-bindata
 $ yarn start
+$ go generate
 $ go build
 $ ./gomibako --port=8000
 ```

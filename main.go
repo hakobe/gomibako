@@ -22,6 +22,8 @@ import (
 	"github.com/urfave/negroni"
 )
 
+//go:generate go-bindata templates/... static/...
+
 func main() {
 	port := flag.Uint64("port", 8000, "Binding TCP port")
 	flag.Parse()
@@ -85,10 +87,13 @@ func _templates() map[string]*template.Template {
 	templates := make(map[string]*template.Template)
 	names := []string{"index", "inspect"}
 
+	layout := string(MustAsset("templates/layout.tmpl.html"))
+
 	for _, name := range names {
-		templates[name] =
-			template.Must(template.ParseFiles(
-				"templates/layout.tmpl.html", "templates/"+name+".tmpl.html"))
+		t := template.New(name)
+		t = template.Must(t.Parse(layout))
+		t = template.Must(t.Parse(string(MustAsset("templates/" + name + ".tmpl.html"))))
+		templates[name] = t
 	}
 
 	return templates
