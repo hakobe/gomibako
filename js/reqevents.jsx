@@ -47,14 +47,21 @@ class Requests extends React.Component {
   }
   componentDidMount() {
     const reqevents = new EventSource(reqEventsPath);
+    const received = {};
     reqevents.onmessage = (e) => {
       const r = JSON.parse(e.data);
       r.key = r.timestamp;
       r.timestamp = new Date(r.key / (1000 * 1000));
+
+      if (received[r.key]) {
+        return;
+      }
+
       this.state.requests.unshift(r);
       this.setState({
         requests: this.state.requests,
       });
+      received[r.key] = true;
     };
   }
   render() {
