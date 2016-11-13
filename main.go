@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"log"
 	"net/http"
 
@@ -22,11 +23,14 @@ import (
 )
 
 func main() {
+	port := flag.Uint64("port", 8000, "Binding TCP port")
+	flag.Parse()
+
 	gr := gomibako.NewGomibakoRepository()
 	go gr.RunBroker()
 
 	handler := NewServerHandler(gr)
-	log.Fatal(http.ListenAndServe(":8000", handler))
+	log.Fatal(http.ListenAndServe(":"+strconv.FormatUint(*port, 10), handler))
 }
 
 type ViewableHeaderPair struct {

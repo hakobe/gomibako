@@ -4,7 +4,14 @@ A requestb.in clone writtern in Go. (hobby product)
 
 ## Usage
 
-`go run main.go` and access to http://localhost:8000
+```sh
+$ npm install -g yarn # If you have not installed yarn
+$ yarn start
+$ go build
+$ ./gomibako --port=8000
+```
+
+And access to http://localhost:8000
 
 ## Description
 
