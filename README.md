@@ -6,12 +6,18 @@ A requestb.in clone writtern in Go. (hobby product)
 
 ```sh
 $ npm install -g yarn # If you have not installed yarn
-$ yarn start
-$ go build
+$ make
 $ ./gomibako --port=8000
 ```
 
-And access to http://localhost:8000
+And access to http://localhost:8000 .
+
+You can also build it for a Linux environment like below.
+
+```
+$ make clean # If you need
+$ GOOS=linux GOARCH=amd64 make
+```
 
 ## Description
 
